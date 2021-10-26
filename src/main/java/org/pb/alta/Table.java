@@ -1,5 +1,6 @@
 package org.pb.alta;
 
+import static java.lang.Long.min;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import javax.enterprise.context.ApplicationScoped;
@@ -32,12 +33,12 @@ public class Table extends AbstractTable {
         log.info("copying to temp table from {} to {}", from, till);
         log.info("Bulk insert statement: {}", bulkPstmt.toString());
         while (from != null && from < till) {
-            duplicate(from, chunkSize, false);
+            duplicate(from, till, chunkSize, false);
             from = getIdToCopyFrom();
         }
     }
 
-    public void duplicate(long from, final int BATCH_SIZE, final boolean exceptionFlow) throws SQLException {
+    public void duplicate(long from, long till, final int BATCH_SIZE, final boolean exceptionFlow) throws SQLException {
         int processed = 0;
         if (BATCH_SIZE == 1) {
             copyOneRow(from);
@@ -48,7 +49,7 @@ public class Table extends AbstractTable {
         int loopCount = 0;
         do {
             try {
-                processed = copy(from, from + size);
+                processed = copy(from, min(till, from + size));
                 from += size;
                 size = BATCH_SIZE;
             } catch (Exception ex) {
@@ -62,7 +63,7 @@ public class Table extends AbstractTable {
                     from += size;
                     processed = 1;
                 } else {
-                    duplicate(from, size / 2, true);
+                    duplicate(from, till, size / 2, true);
                     from = getIdToCopyFrom();
                     processed = -1;
                     loopCount = 0;
@@ -71,7 +72,7 @@ public class Table extends AbstractTable {
                 //                log.error(null, ex);
             }
             loopCount++;
-        } while (processed != 0 && (loopCount <= 1 || !exceptionFlow));
+        } while (processed != 0 && (loopCount <= 1 || !exceptionFlow) && from < till);
         log.info("-----------" + size + "----------");
     }
 
@@ -100,7 +101,7 @@ public class Table extends AbstractTable {
         bulkPstmt.setObject(1, from);
         bulkPstmt.setObject(2, to);
         int result = bulkPstmt.executeUpdate();
-        log.info("result: {}", result);
+        log.info("Inserted: {}", result);
         return result;
     }
 }

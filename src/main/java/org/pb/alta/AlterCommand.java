@@ -5,7 +5,6 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -40,8 +39,6 @@ public class AlterCommand implements Runnable, QuarkusApplication {
     private Long end;
     private int chunk;
 
-    public static final DateTimeFormatter ddMMyyyy = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-
     public AlterCommand(Table table) {
         this.table = table;
     }
@@ -55,11 +52,11 @@ public class AlterCommand implements Runnable, QuarkusApplication {
     public void run() {
         validate();
         try {
-            log.info("Preparing to duplicate {}", tableName);
+            log.info("Preparing to duplicate {} table", tableName);
             Instant d = Instant.now();
             table.duplicate(tableName, start, end, chunk);
             Duration time = Duration.between(d, Instant.now());
-            log.info("Took: {}", humanReadableFormat(time));
+            log.info("Took: {} to duplicate {} table", humanReadableFormat(time), tableName);
         } catch (SQLException ex) {
             log.error("Error while duplicating the table {}", tableName, ex);
         }
@@ -81,12 +78,21 @@ public class AlterCommand implements Runnable, QuarkusApplication {
             }
             if (chunkSize != null && !chunkSize.isBlank()) {
                 chunk = Integer.parseInt(chunkSize);
+                chunk = powerOf2(chunk);
             }
         } catch (NumberFormatException ex) {
             log.error("Invalid start ID or end ID");
             CommandLine.usage(this, System.err);
             System.exit(0);
         }
+    }
+
+    private int powerOf2(int chunk) {
+        int c = 2;
+        while (chunk > c) {
+            c *= 2;
+        }
+        return c;
     }
 
     public static String humanReadableFormat(Duration duration) {
