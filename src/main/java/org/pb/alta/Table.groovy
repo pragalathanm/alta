@@ -1,25 +1,27 @@
-package org.pb.alta;
+package org.pb.alta
 
-import static java.lang.Long.min;
-import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import javax.enterprise.context.ApplicationScoped;
-import lombok.extern.slf4j.Slf4j;
-import org.pb.alta.exception.TableNotFoundException;
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import org.pb.alta.exception.TableNotFoundException
+import javax.enterprise.context.ApplicationScoped
+import java.sql.SQLException
+
+import static java.lang.Long.min
 
 /**
  * This class is mainly used duplicating tables in case of ALTER commands.
  *
  * @author Pragalathan M <pragalathanm@gmail.com>
  */
+@CompileStatic
 @ApplicationScoped
 @Slf4j
-public class Table extends AbstractTable {
+class Table extends AbstractTable {
 
-    public void duplicate(String table, Long from, Long till, final int chunkSize) throws SQLException {
+    void duplicate(String table, Long from, Long till, final int chunkSize) throws SQLException {
         super.init(table);
         try {
-            executeQuery("SHOW TABLES LIKE '_" + table + "'", String.class);
+            executeQuery("SHOW TABLES LIKE '_$table'", String.class);
         } catch (Exception ex) {
             throw new TableNotFoundException("_" + table);
         }
@@ -28,7 +30,7 @@ public class Table extends AbstractTable {
             from = getIdToCopyFrom();
         }
         if (till == null) {
-            till = executeQuery("select MAX(" + primaryKey + ") from " + table, Long.class);
+            till = executeQuery("select MAX($primaryKey) from $table", Long.class);
         }
         log.info("copying to temp table from {} to {}", from, till);
         log.info("Bulk insert statement: {}", bulkPstmt.toString());
@@ -42,20 +44,20 @@ public class Table extends AbstractTable {
         log.info("The application is stopped");
     }
 
-    public void duplicate(long from, long till, final int BATCH_SIZE, final boolean exceptionFlow) throws SQLException {
-        int processed = 0;
-        if (BATCH_SIZE == 1) {
+    void duplicate(long from, long till, final int CHUNK_SIZE, final boolean exceptionFlow) throws SQLException {
+        int processed;
+        if (CHUNK_SIZE == 1) {
             copyOneRow(from);
             return;
         }
 
-        int size = BATCH_SIZE;
+        int size = CHUNK_SIZE;
         int loopCount = 0;
         do {
             try {
                 processed = copy(from, min(till, from + size));
                 from += size;
-                size = BATCH_SIZE;
+                size = CHUNK_SIZE;
             } catch (Exception ex) {
                 //            } catch (CannotAcquireLockException | QueryTimeoutException ex) {
                 log.error("Timeout {}", ex.getMessage());
@@ -67,7 +69,7 @@ public class Table extends AbstractTable {
                     from += size;
                     processed = 1;
                 } else {
-                    duplicate(from, till, size / 2, true);
+                    duplicate(from, till, (int) (size / 2), true);
                     from = getIdToCopyFrom();
                     processed = -1;
                     loopCount = 0;
@@ -86,15 +88,15 @@ public class Table extends AbstractTable {
     }
 
     private Long getIdToCopyFrom() throws SQLException {
-        Long from = executeQuery("select MAX(" + primaryKey + ") from _" + table, Long.class);
+        Long from = executeQuery("select MAX($primaryKey) from _$table", Long.class);
         if (from != null) {
             from++;
             long old = from;
-            from = executeQuery("select MIN(" + primaryKey + ") from " + table + " WHERE " + primaryKey + ">=" + from, Long.class);
-            log.info("Using Id: {} from select MIN(" + primaryKey + ") from " + table + " WHERE " + primaryKey + ">={}", from, old);
+            from = executeQuery("select MIN($primaryKey) from $table WHERE $primaryKey >= $from", Long.class);
+            log.info("Using Id: $from from select MIN($primaryKey) from $table WHERE $primaryKey >=$old");
         } else {
-            from = executeQuery("select MIN(" + primaryKey + ") from " + table, Long.class);
-            log.info("Using Id: {} from select MIN(" + primaryKey + ") from " + table, from);
+            from = executeQuery("select MIN($primaryKey) from $table", Long.class);
+            log.info("Using Id: $from from select MIN($primaryKey) from $table");
         }
         return from;
     }

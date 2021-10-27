@@ -19,6 +19,7 @@
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <quarkus.container-image.build>true</quarkus.container-image.build>
+        <groovy.version>3.0.9</groovy.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -54,6 +55,11 @@
             <artifactId>lombok</artifactId>
             <version>1.18.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>${groovy.version}</version>
+        </dependency>
     </dependencies>
     
     <build>
@@ -74,9 +80,39 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-eclipse-compiler</artifactId>
+                <version>3.7.0</version>
+                <extensions>true</extensions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy-eclipse-compiler</artifactId>
+                        <version>3.7.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy-eclipse-batch</artifactId>
+                        <version>3.0.8-01</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>1.18.12</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
+                    <compilerId>groovy-eclipse-compiler</compilerId>
+                    <fork>true</fork> 
+                    <compilerArguments>
+                        <javaAgentClass>lombok.launch.Agent</javaAgentClass>
+                    </compilerArguments>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                     <parameters>${maven.compiler.parameters}</parameters>
                 </configuration>
             </plugin>

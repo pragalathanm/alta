@@ -1,27 +1,21 @@
-package org.pb.alta;
+package org.pb.alta
 
-import io.agroal.api.AgroalDataSource;
-import io.quarkus.runtime.ShutdownEvent;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map.Entry;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
-import org.pb.alta.exception.UnsupportedPrimaryKeyException;
+import groovy.transform.CompileStatic
+import io.agroal.api.AgroalDataSource
+import io.quarkus.runtime.ShutdownEvent
+import groovy.util.logging.Slf4j
+import org.pb.alta.exception.UnsupportedPrimaryKeyException
+import javax.enterprise.event.Observes
+import javax.inject.Inject
+import java.sql.*
+import java.util.Map.Entry
 
 /**
  * @author Pragalathan M <pragalathanm@gmail.com>
  */
+@CompileStatic
 @Slf4j
-public class AbstractTable {
+class AbstractTable {
 
     @Inject
     AgroalDataSource mysqlDS;
@@ -41,8 +35,8 @@ public class AbstractTable {
         this.table = table;
         mysqlConnection = mysqlDS.getConnection();
         statement = mysqlConnection.createStatement();
-        primaryKey = getPrimaryKey();
-        columns = new LinkedHashSet<>(executeQuery("SELECT * from " + table + " LIMIT 1").keySet());
+        primaryKey = findPrimaryKey();
+        columns = new LinkedHashSet<>(executeQuery("SELECT * from $table LIMIT 1").keySet());
         columnsStr = String.join(",", columns);
         bulkPstmt = createBulkStatement();
         singlePstmt = createSingleRowStatement();
@@ -82,7 +76,7 @@ public class AbstractTable {
         throw new RuntimeException("Error executing: " + query);
     }
 
-    private String getPrimaryKey() throws SQLException {
+    private String findPrimaryKey() throws SQLException {
         try (ResultSet rs = mysqlConnection.getMetaData().getPrimaryKeys(null, mysqlConnection.getSchema(), table)) {
             while (rs.next()) {
                 if (primaryKey != null) {
@@ -95,16 +89,13 @@ public class AbstractTable {
     }
 
     private PreparedStatement createBulkStatement() throws SQLException {
-        String batchSql = "INSERT INTO _" + table
-                + "(" + columnsStr + ")"
-                + " SELECT  " + columnsStr
-                + " FROM " + table
-                + "\n WHERE " + primaryKey + " >= ? AND " + primaryKey + " < ?";
+        String batchSql = "INSERT INTO _$table ($columnsStr) SELECT $columnsStr FROM $table WHERE $primaryKey >= ? AND $primaryKey < ?";
         return mysqlConnection.prepareStatement(batchSql);
     }
 
     private PreparedStatement createSingleRowStatement() throws SQLException {
-        String singleRowSql = "INSERT INTO _" + table + " (" + columnsStr + ") values(" + String.join(",", Collections.nCopies(columns.size(), "?")) + ")";
+        String variables = String.join(",", Collections.nCopies(columns.size(), "?"));
+        String singleRowSql = "INSERT INTO _$table ($columnsStr) values($variables)";
         return mysqlConnection.prepareStatement(singleRowSql);
     }
 
