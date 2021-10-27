@@ -32,10 +32,14 @@ public class Table extends AbstractTable {
         }
         log.info("copying to temp table from {} to {}", from, till);
         log.info("Bulk insert statement: {}", bulkPstmt.toString());
-        while (from != null && from < till) {
+        while (go && from != null && from < till) {
             duplicate(from, till, chunkSize, false);
+            if (!go) {
+                break;
+            }
             from = getIdToCopyFrom();
         }
+        log.info("The application is stopped");
     }
 
     public void duplicate(long from, long till, final int BATCH_SIZE, final boolean exceptionFlow) throws SQLException {
@@ -72,7 +76,7 @@ public class Table extends AbstractTable {
                 //                log.error(null, ex);
             }
             loopCount++;
-        } while (processed != 0 && (loopCount <= 1 || !exceptionFlow) && from < till);
+        } while (go && processed != 0 && (loopCount <= 1 || !exceptionFlow) && from < till);
         log.info("-----------" + size + "----------");
     }
 

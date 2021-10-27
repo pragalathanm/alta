@@ -1,6 +1,7 @@
 package org.pb.alta;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.runtime.ShutdownEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,12 +12,15 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map.Entry;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
 import org.pb.alta.exception.UnsupportedPrimaryKeyException;
 
 /**
  * @author Pragalathan M <pragalathanm@gmail.com>
  */
+@Slf4j
 public class AbstractTable {
 
     @Inject
@@ -31,6 +35,7 @@ public class AbstractTable {
     protected String primaryKey;
     protected PreparedStatement bulkPstmt;
     protected PreparedStatement singlePstmt;
+    protected transient boolean go = true;
 
     void init(String table) throws SQLException {
         this.table = table;
@@ -101,5 +106,10 @@ public class AbstractTable {
     private PreparedStatement createSingleRowStatement() throws SQLException {
         String singleRowSql = "INSERT INTO _" + table + " (" + columnsStr + ") values(" + String.join(",", Collections.nCopies(columns.size(), "?")) + ")";
         return mysqlConnection.prepareStatement(singleRowSql);
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+        go = false;
+        log.info("The application is stopping...");
     }
 }
