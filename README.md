@@ -1,5 +1,5 @@
 In a nutshell `Alta` is used to duplicate a MySQL table. The inherent idempotency nature of `Alta` comes in handy when you want to alter a very large table in MySQL.
-#How does it work?
+# How does it work?
 You need to create the target table with all the necessary `ALTER TABLE` commands. 
 The target table should be of the name `_sourceTable`
 Then you can use the following command to copy records from `sourceTable` to `_sourceTable` (note the underscore prefix).
@@ -36,11 +36,11 @@ alta-1.0 -t employees -Dhost=localhost -Dport=3306 -Ddatabase=company -c 1024
 The chunk size determines how many records has to be fetched and copied to the target table in one go.
 Depending on your production hardware you need to fine tune the `chunkSize` parameter to improve performance.
 
-###What if you want to copy only range of records, for example, for archival?
+### What if you want to copy only range of records, for example, for archival?
 You can use `--start-id` and `--end-id` parameters.
-#How to build?
+# How to build?
 ```./mvnw package -Pnative -Dquarkus.native.container-build=true```
 
-#Limitation
+# Limitation
 - Alta supports only MySQL for now
 - Alta can operate only on tables with simple numeric primary keys
