@@ -34,6 +34,7 @@ class Table extends AbstractTable {
         }
         log.info("copying to temp table from {} to {}", from, till);
         log.info("Bulk insert statement: {}", bulkPstmt.toString());
+        till++;
         while (go && from != null && from < till) {
             duplicate(from, till, chunkSize, false);
             if (!go) {
