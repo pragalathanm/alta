@@ -18,7 +18,7 @@ import java.util.Map.Entry
 class AbstractTable {
 
     @Inject
-    AgroalDataSource mysqlDS;
+    protected AgroalDataSource mysqlDS;
 
     private Connection mysqlConnection;
     private Statement statement;

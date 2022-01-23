@@ -13,9 +13,10 @@ The full list of parameters
 ```
 Usage: alta-1.0 [-c=<chunkSize>] [-e=<endId>] [-s=<startId>] [-t=<tableName>]
   -c, --chunk-size=<chunkSize> the chunk of records that needs to be copied in one go
-  -e, --end-id=<endId>         ID of the recotd to copy till
+  -e, --end-id=<endId>         ID of the record to copy till
   -s, --start-id=<startId>     ID of the record to copy from
   -t, --table=<tableName>      the name of the table
+  -p, --password               the password of the mysql server
 ```
 
 How to pass MySQL credentials?
@@ -26,12 +27,13 @@ How to pass MySQL credentials?
 -Dusername : mysql username
 -Dpassword : mysql password
 ```
+Of course in production you dont want to pass password as an argument. Instead, you can use `-p` or `-password` flag which will prompt for password.
 If you need precise control over the DB url, you can use the following parameter
 ```-Dquarkus.datasource.jdbc.url```; in that case, parameters `host`, `port` and `database` will be ignored. 
 
 E.g. if you want to duplicate employees table of company database from localhost mysql server
 ```
-alta-1.0 -t employees -Dhost=localhost -Dport=3306 -Ddatabase=company -c 1024
+alta-1.0 -t employees -Dhost=localhost -Dport=3306 -Ddatabase=company -c 1024 -p
 ```
 The chunk size determines how many records has to be fetched and copied to the target table in one go.
 Depending on your production hardware you need to fine tune the `chunkSize` parameter to improve performance.

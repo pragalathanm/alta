@@ -8,6 +8,7 @@ import java.time.Instant;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 /**
  * Command that takes arguments from CLI and duplicates a table in MySQL.
@@ -22,25 +23,30 @@ public class AlterCommand implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
-    @CommandLine.Option(names = {"-t", "--table"}, description = "the name of the table")
+    @Option(names = {"-t", "--table"}, description = "the name of the table")
     String tableName;
 
-    @CommandLine.Option(names = {"-s", "--start-id"}, description = "ID of the record to copy from", required = false)
+    @Option(names = {"-s", "--start-id"}, description = "ID of the record to copy from", required = false)
     String startId;
 
-    @CommandLine.Option(names = {"-e", "--end-id"}, description = "ID of the recotd to copy till", required = false)
+    @Option(names = {"-e", "--end-id"}, description = "ID of the recotd to copy till", required = false)
     String endId;
 
-    @CommandLine.Option(names = {"-c", "--chunk-size"}, description = "the chunk of records that needs to be copied in one go", defaultValue = "1024", required = false)
+    @Option(names = {"-c", "--chunk-size"}, description = "the chunk of records that needs to be copied in one go", defaultValue = "1024", required = false)
     String chunkSize;
 
+    @Option(names = {"-p", "--password"}, description = "MySQL password", interactive = true)
+    char[] password;
+
     private final Table table;
+    private final PicocliCredentialsProvider credentialsProvider;
     private Long start;
     private Long end;
     private int chunk;
 
-    public AlterCommand(Table table) {
+    public AlterCommand(Table table, PicocliCredentialsProvider credentialsProvider) {
         this.table = table;
+        this.credentialsProvider = credentialsProvider;
     }
 
     @Override
@@ -50,6 +56,7 @@ public class AlterCommand implements Runnable, QuarkusApplication {
 
     @Override
     public void run() {
+        credentialsProvider.setPassword(password);
         validate();
         try {
             log.info("Preparing to duplicate {} table", tableName);
